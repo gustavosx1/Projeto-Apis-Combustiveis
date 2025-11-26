@@ -1,4 +1,3 @@
-// Package api
 package api
 
 import (
@@ -6,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -41,45 +41,67 @@ type Estados struct {
 }
 
 func Request(URL string, estado string, combustivel string) {
-	client := http.Client{
-		Timeout: 10 * time.Second,
-	}
-	req, err := http.NewRequest("GET", URL, nil)
-	if err != nil {
-		panic(err)
-	}
+	client := http.Client{Timeout: 10 * time.Second}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Language", "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7")
-	req.Header.Set("Connection", "keep-alive")
-
+	req, _ := http.NewRequest("GET", URL, nil)
+	req.Header.Set("User-Agent", "Mozilla")
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		fmt.Println("Erro ao conectar:", err)
+		return
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
 
-	fmt.Println(string(body))
+	body, _ := io.ReadAll(resp.Body)
 
 	var dados PrecoPosto
-	err = json.Unmarshal(body, &dados)
-	if err != nil {
-		panic(err)
+	json.Unmarshal(body, &dados)
+
+	fmt.Printf("\n📅 Data da coleta: %s\n", dados.Data)
+
+	var precoEstados Estados
+
+	if combustivel == "Diesel" {
+		precoEstados = dados.Precos.Diesel
+	} else {
+		precoEstados = dados.Precos.Gasolina
 	}
 
-	fmt.Printf("\nStatus:\n %v", resp.Status)
-	fmt.Println("\nData de Coleta dos Dados:\n", dados.Data)
-	switch combustivel {
-	case "diesel":
-		// swtich estado
-		fmt.Println("\nPreços:\n", dados.Precos.Diesel)
-	case "gasolina":
-		// switch estado
-		fmt.Println("\nPreços:\n", dados.Precos.Gasolina)
+	if estado == "Todos" {
+		PrintAll(precoEstados)
+	} else {
+		PrintSingle(estado, precoEstados)
 	}
+}
+
+func PrintSingle(estado string, e Estados) {
+	valor := getField(e, strings.ToLower(estado))
+	fmt.Printf("\n💰 Preço em %s: R$ %s\n", estado, valor)
+}
+
+func PrintAll(e Estados) {
+	fmt.Println("\n💰 Preços em todos os Estados:")
+	fmt.Println("───────────────────────────────")
+
+	est := map[string]string{
+		"Br": e.Br, "Al": e.Al, "Am": e.Am, "Ce": e.Ce, "Df": e.Df,
+		"Es": e.Es, "Go": e.Go, "Ma": e.Ma, "Mt": e.Mt, "Pg": e.Pg,
+		"Mg": e.Mg, "Pr": e.Pr, "Pa": e.Pa, "Pe": e.Pe, "Rs": e.Rs,
+		"Sp": e.Sp, "Sc": e.Sc, "Rj": e.Rj,
+	}
+
+	for uf, preco := range est {
+		fmt.Printf(" • %s → R$ %s\n", uf, preco)
+	}
+}
+
+// pega o valor do campo pelo nome
+func getField(e Estados, nome string) string {
+	v := map[string]string{
+		"br": e.Br, "al": e.Al, "am": e.Am, "ce": e.Ce, "df": e.Df,
+		"es": e.Es, "go": e.Go, "ma": e.Ma, "mt": e.Mt, "pg": e.Pg,
+		"mg": e.Mg, "pr": e.Pr, "pa": e.Pa, "pe": e.Pe, "rs": e.Rs,
+		"sp": e.Sp, "sc": e.Sc, "rj": e.Rj,
+	}
+	return v[nome]
 }
