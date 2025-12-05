@@ -1,3 +1,4 @@
+// Package api
 package api
 
 import (
@@ -40,10 +41,32 @@ type Estados struct {
 	Rj string `json:"rj"`
 }
 
+func RequestMath(URL string, num1 string, num2 string) {
+	client := http.Client{Timeout: 10 * time.Second}
+
+	req, _ := http.NewRequest("POST", URL, nil)
+	req.Header.Set("Request", "Posto")
+	req.Header.Set("Number1", num1)
+	req.Header.Set("Number2", num2)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Erro ao conectar:", err)
+		return
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		println("Erro ao ler o corpo da resposta:", err)
+		return
+	}
+	fmt.Println(string(body))
+}
+
 func Request(URL string, estado string, combustivel string) {
 	client := http.Client{Timeout: 10 * time.Second}
 
 	req, _ := http.NewRequest("GET", URL, nil)
+	req.Header.Set("Request", "Postos")
 	req.Header.Set("User-Agent", "Mozilla")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -105,3 +128,5 @@ func getField(e Estados, nome string) string {
 	}
 	return v[nome]
 }
+
+func printRaw() {}
